@@ -15,22 +15,20 @@ The other option is run mvn install to build the application.  This will place a
 java -jar {application}.jar --oktaorg https://youroktaorg --apikey {your apikey} --startDate YYYY-MM-DDTHH:MM:SS.sssZ --endDate YYYY-MM-DDTHH:MM:SS.sssZ
 
 If you remove --apikey, the application will prompt for you to enter.
+After execution the folder where the application is ran will contain two files.
 
-After execution the folder where the application is ran will be two files.
-
-loginreport.log contains the unique user login count
-
-login-YYYYMMDDHHMM.txt is a csv report with the following data:
-
-Login -- the login id of the user
-
-\# of Authentications -- Number of authentications performed by the user during the time specified
-
-IDPSource -- The source of authentication.
+1. loginreport.log contains the unique user login count
+2. login-YYYYMMDDHHMM.txt is a csv report with the following data:
+  * Login -- the login id of the user
+  * \# of Authentications -- Number of authentications performed by the user during the time specified
+  * IDPSource -- The source of authentication.
 
 Example:
 
-Login,#of Authentications,IDPSource
-"user1@email.com","5","MYIDP"
+| Login            | #of Authentications   | IDPSource       |
+| ---------------- |:---------------------:| --------------- |
+| "user1@email.com"|"5"                    | "MYIDP"         |
+| "user2@email.com"|"10"                   | "DIFFERENTIDP"  |
+
 
  
