@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -20,6 +21,7 @@ public class UniqueLoginReport {
     private static String token = null;
     private static final Logger logger = LogManager.getLogger(UniqueLoginReport.class);
     private static final Logger reportLog = LogManager.getLogger("loginreport");
+    private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     public static String get(String resource, String token) {
         boolean tryAgain = true;
@@ -97,7 +99,7 @@ public class UniqueLoginReport {
                 "%22%20and%20published%20lt%20%22" + endDate +
                 "%22%20and%20action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22", token);
 
-        reportLog.info("unique authcount for period {} to {} :: {}", startDate, endDate, getUniqueUsersFromEvent(ret, ret2));
+        //reportLog.info("unique authcount for period {} to {} :: {}", startDate, endDate, getUniqueUsersFromEvent(ret, ret2));  //No longer relevant.
 
     }
 
@@ -111,7 +113,13 @@ public class UniqueLoginReport {
             if (!eventAftArr.getJSONObject(i).getJSONArray("actors").getJSONObject(0).isNull("login")) {
                 String login = eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).getString("login");
                 String requestId = eventAftArr.getJSONObject(i).getString("requestId");
-                UniqueUsers.addUser(login, requestId);
+                String published = eventAftArr.getJSONObject(i).getString("published");
+                try {
+                    UniqueUsers.addUser(login, formatter.parse(published.replaceAll("Z$", "+0000")), requestId);
+                } catch (java.text.ParseException pe) {
+                    logger.error("Date Parse issue for " + login + " date: " + published, pe);
+                    System.exit(-1);
+                }
             }
         }
 
@@ -129,6 +137,7 @@ public class UniqueLoginReport {
         }
 
         UniqueUsers.getCSV();
+        UniqueUsers.getRawCSV();
 
         return UniqueUsers.getUniqueAuthCount();
     }
