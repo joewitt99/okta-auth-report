@@ -3,6 +3,7 @@ package oktareport;
 import com.opencsv.CSVWriter;
 
 import java.io.FileWriter;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,10 +56,12 @@ public class UniqueUsers {
     }
 
 
-    public static void getCSV() {
+    public static void getCSV(String oktaOrg) {
         try {
             logger.info("Starting generation of CSV file...");
-            String fileName = new SimpleDateFormat("'login-'yyyyMMddHHmm'.txt'").format(new Date());
+            URL netUrl = new URL(oktaOrg);
+            String host = netUrl.getHost();
+            String fileName = new SimpleDateFormat("'"+host+"-'yyyyMMddHHmm'.txt'").format(new Date());
             CSVWriter writer = new CSVWriter(new FileWriter(fileName));
             writer.writeNext(new String[] {"Login", "# Unique Auths", "# of Authentications", "Source"});
             uniqueUsers.loginUsers.forEach((userId, user) -> {
@@ -73,10 +76,12 @@ public class UniqueUsers {
         }
     }
 
-    public static void getRawCSV() {
+    public static void getRawCSV(String oktaOrg) {
         try {
             logger.info("Starting generation of Raw CSV file...");
-            String fileName = new SimpleDateFormat("'login-all-'yyyyMMddHHmm'.txt'").format(new Date());
+            URL netUrl = new URL(oktaOrg);
+            String host = netUrl.getHost();
+            String fileName = new SimpleDateFormat("'"+host+"-all-'yyyyMMddHHmm'.txt'").format(new Date());
             CSVWriter writer = new CSVWriter(new FileWriter(fileName));
             writer.writeNext(new String[] {"Login", "Date", "Source"});
             uniqueUsers.loginUsers.forEach((userId, user) -> {
@@ -104,6 +109,12 @@ public class UniqueUsers {
         private Date loginDate;
         private HashMap<String, Date> requestIDPMap = new HashMap<String, Date>(); //Look at memory consumption on large dataloads this could be removed.
 
+        public LoginUser(String userId, Date published) {
+            this.userId = userId;
+            this.loginDate = published;
+            this.uniqueLoginDate = published;
+        }
+
         public LoginUser(String userId, String requestId, String idpSource, Date published) {
             this.userId = userId;
             this.requestIDPMap.put(requestId, published);
@@ -128,6 +139,14 @@ public class UniqueUsers {
         public void addIdpSource(String requestId, String idpSource) {
             this.idpSource = idpSource;
             //this.requestIDPMap.put(requestId, published); //Look at memory consumption on large dataloads this could be removed.
+        }
+
+        public void setUniqueLoginDate(Date date) {
+            this.uniqueLoginDate = date;
+        }
+
+        public Date getUniqueLoginDate() {
+            return this.uniqueLoginDate;
         }
 
         public String getUserId() {

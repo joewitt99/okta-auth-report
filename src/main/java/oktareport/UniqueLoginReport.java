@@ -23,6 +23,8 @@ public class UniqueLoginReport {
     private static final Logger reportLog = LogManager.getLogger("loginreport");
     private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
+    private static long HOURS24 = 86400000L;
+
     public static String get(String resource, String token) {
         boolean tryAgain = true;
         String result = "";
@@ -30,6 +32,7 @@ public class UniqueLoginReport {
         HttpURLConnection conn;
         BufferedReader rd;
         String line;
+        logger.debug("URL = " + resource);
         try {
             url = new URL(resource);
             while (tryAgain) {
@@ -86,9 +89,6 @@ public class UniqueLoginReport {
 
     public static void eventsAPI(String startDate, String endDate) {
 
-
-        ArrayList<String> finalResult = new ArrayList<String>();
-
         String ret = get(tenantUrl +
                 "/events?filter=published%20gt%20%22" + startDate +
                 "%22%20and%20published%20lt%20%22" + endDate +
@@ -97,10 +97,10 @@ public class UniqueLoginReport {
         String ret2 = get(tenantUrl +
                 "/events?filter=published%20gt%20%22" + startDate +
                 "%22%20and%20published%20lt%20%22" + endDate +
-                "%22%20and%20action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22", token);
+                "%22%20and%20%28action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22%20or%20action.objectType%20eq%20%22app.ldap.login.success%22%20or%20action.objectType%20eq%20%22app.ad.login.success%22%29", token);
 
         //reportLog.info("unique authcount for period {} to {} :: {}", startDate, endDate, getUniqueUsersFromEvent(ret, ret2));  //No longer relevant.
-
+        getUniqueUsersFromEvent(ret, ret2);
     }
 
     public static int getUniqueUsersFromEvent(String ret, String ret2) {
@@ -136,8 +136,8 @@ public class UniqueLoginReport {
             }
         }
 
-        UniqueUsers.getCSV();
-        UniqueUsers.getRawCSV();
+        UniqueUsers.getCSV(tenantUrl);
+        UniqueUsers.getRawCSV(tenantUrl);
 
         return UniqueUsers.getUniqueAuthCount();
     }
