@@ -17,18 +17,33 @@ java -jar {application}.jar --oktaorg https://youroktaorg --apikey {your apikey}
 If you remove --apikey, the application will prompt for you to enter.
 After execution the folder where the application is ran will contain two files.
 
-1. loginreport.log contains the unique user login count
-2. login-YYYYMMDDHHMM.txt is a csv report with the following data:
+1. [oktaorg]-YYYYMMDDHHMM.txt is a csv report with the following data:
   * Login -- the login id of the user
+  * \# of unique authentications -- number of unique authentications on a per user 24 hour basis
   * \# of Authentications -- Number of authentications performed by the user during the time specified
-  * IDPSource -- The source of authentication.
+  * Source -- The source of authentication.
 
 Example:
 
-| Login            | #of Authentications   | IDPSource       |
-| ---------------- |:---------------------:| --------------- |
-| "user1@email.com"|"5"                    | "MYIDP"         |
-| "user2@email.com"|"10"                   | "DIFFERENTIDP"  |
+| Login            | # of unique auths  | #of Authentications   | Source          |
+| ---------------- |:-----------------: |:---------------------:| --------------- |
+| "user1@email.com"|"1"                 |"5"                    | "MYIDP"         |
+| "user2@email.com"|"2"                 |"10"                   | "DIFFERENTIDP"  |
 
+2. [oktaorg]-YYYYMMDDHHMM.txt is a csv report with the following data:
+  * Login
+  * Date
+  * Source
+  
+Example:
 
+| Login            | Date                        | Source         |
+| ---------------- |:---------------------------:|:---------------| 
+| "user1@email.com"|2017-09-25T11:27:16.000-0400 |"MYIDP"         |
+| "user2@email.com"|2017-09-25T11:27:16.000-0400 |"DIFFERENTIDP"  |
+  
+## Java Requirements
+Java 8 or greater is required to execute the application.  The recommended java memory options are:
+
+-Xms512M and -Xmx1G  
  
