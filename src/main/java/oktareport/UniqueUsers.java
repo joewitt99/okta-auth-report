@@ -35,6 +35,9 @@ public class UniqueUsers {
     }
 
     public static void addIdpSource(String userId, String requestId, String idpSource) {
+        if(uniqueUsers == null) {
+            uniqueUsers = new UniqueUsers();
+        }
         uniqueUsers.addSource(userId, requestId, idpSource);
     }
 
@@ -48,7 +51,12 @@ public class UniqueUsers {
     }
 
     private void addSource(String userId, String requestId, String idpSource) {
-        loginUsers.get(userId).addIdpSource(requestId, idpSource); //must exist
+        if(loginUsers.containsKey(userId)) {
+            loginUsers.get(userId).addIdpSource(requestId, idpSource);
+        } else {
+            LoginUser user = new LoginUser(userId, requestId, idpSource);
+            loginUsers.put(userId, user);
+        }
     }
 
     public static int getUniqueAuthCount() {
@@ -115,6 +123,12 @@ public class UniqueUsers {
             this.uniqueLoginDate = published;
         }
 
+        public LoginUser(String userId, String requestId, String idpSource) {
+            this.userId = userId;
+            this.requestIDPMap.put(requestId, null);
+            this.idpSource = idpSource;
+        }
+
         public LoginUser(String userId, String requestId, String idpSource, Date published) {
             this.userId = userId;
             this.requestIDPMap.put(requestId, published);
@@ -126,11 +140,16 @@ public class UniqueUsers {
 
         public void addAuth(String requestId, Date published) {
             //Check if this auth is 24 hours past the uniqueLoginDate.  If it is then this is a unique login count for this user.
-            long initial = uniqueLoginDate.getTime();
-            long loginTime = published.getTime();
-            if((loginTime - initial)>HOURS24) {
+            if(this.uniqueLoginDate == null) {
+                this.uniqueLoginDate = published;
                 this.uniqueAuthCount++;
-                uniqueLoginDate = published;
+            } else {
+                long initial = this.uniqueLoginDate.getTime();
+                long loginTime = published.getTime();
+                if ((loginTime - initial) > HOURS24) {
+                    this.uniqueAuthCount++;
+                    this.uniqueLoginDate = published;
+                }
             }
             this.authCount++;
             this.requestIDPMap.put(requestId, published);

@@ -11,6 +11,9 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,18 +28,23 @@ public class UniqueLoginReport {
 
     private static long HOURS24 = 86400000L;
 
-    public static String get(String resource, String token) {
+    private static Pattern linkMatcher = Pattern.compile("^<(.*)>; rel=\"(.*)\"$");
+
+    public static String[] get(String resource, String token) {
         boolean tryAgain = true;
         String result = "";
+        String nextUrl = "";
         URL url;
         HttpURLConnection conn;
         BufferedReader rd;
         String line;
+        String[] response = new String[2];
         logger.debug("URL = " + resource);
         try {
             url = new URL(resource);
             while (tryAgain) {
                 result = "";
+                nextUrl = "";
                 try {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(10000);
@@ -55,6 +63,17 @@ public class UniqueLoginReport {
                         while ((line = rd.readLine()) != null) {
                             result += line;
                         }
+                        response[0] = result;
+                        List<String> links  = conn.getHeaderFields().get("Link");
+                        links.forEach( (link) -> {
+                            Matcher linkMatch = linkMatcher.matcher(link);
+                            if(linkMatch.matches()) {
+                                if(linkMatch.group(2).equals("next")) {
+                                    response[1] = linkMatch.group(1);
+                                }
+                            }
+                        });
+
                         rd.close();
                     } else if (retCode == 404) {
                         tryAgain = false;
@@ -83,63 +102,60 @@ public class UniqueLoginReport {
             e.printStackTrace();
             logger.error("error with API processing", e);
         }
-        return result;
+        return response;
     }
 
 
     public static void eventsAPI(String startDate, String endDate) {
 
-        String ret = get(tenantUrl +
+        String[] ret = get(tenantUrl +
                 "/events?filter=published%20gt%20%22" + startDate +
                 "%22%20and%20published%20lt%20%22" + endDate +
-                "%22%20and%20action.objectType%20eq%20%22core.user_auth.login_success%22", token);
-
-        String ret2 = get(tenantUrl +
-                "/events?filter=published%20gt%20%22" + startDate +
-                "%22%20and%20published%20lt%20%22" + endDate +
-                "%22%20and%20%28action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22%20or%20action.objectType%20eq%20%22app.ldap.login.success%22%20or%20action.objectType%20eq%20%22app.ad.login.success%22%29", token);
-
-        //reportLog.info("unique authcount for period {} to {} :: {}", startDate, endDate, getUniqueUsersFromEvent(ret, ret2));  //No longer relevant.
-        getUniqueUsersFromEvent(ret, ret2);
+                "%22%20and%20%28action.objectType%20eq%20%22core.user_auth.login_success%22%20or%20" +
+                "action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22%20or%20action.objectType%20eq%20" +"" +
+                "%22core.user_auth.idp.saml.login_success%22+or+action.objectType+eq+%22app.ldap.login.success%22+or+action.objectType+eq+%22app.ad.login.success%22%29", token);
+        while(!ret[0].equals("[]")) {
+            getUniqueUsersFromEvent(ret[0]);
+            if(ret[1] != null && !ret[1].trim().equals("")) {
+                ret = get(ret[1], token);
+            }
+        }
+        UniqueUsers.getCSV(tenantUrl);
+        UniqueUsers.getRawCSV(tenantUrl);
     }
 
-    public static int getUniqueUsersFromEvent(String ret, String ret2) {
+    public static void getUniqueUsersFromEvent(String ret) {
 
         //Check to make sure there is a login
         JSONArray eventAftArr = new JSONArray(ret);
 
         for (int i = 0; i < eventAftArr.length(); i++) {
 
-            if (!eventAftArr.getJSONObject(i).getJSONArray("actors").getJSONObject(0).isNull("login")) {
-                String login = eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).getString("login");
-                String requestId = eventAftArr.getJSONObject(i).getString("requestId");
-                String published = eventAftArr.getJSONObject(i).getString("published");
+            if (eventAftArr.getJSONObject(i).getJSONObject("action").getString("objectType").equals("core.user_auth.login_success")) {
                 try {
-                    UniqueUsers.addUser(login, formatter.parse(published.replaceAll("Z$", "+0000")), requestId);
-                } catch (java.text.ParseException pe) {
-                    logger.error("Date Parse issue for " + login + " date: " + published, pe);
-                    System.exit(-1);
+                    String login = eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).getString("login");
+                    String requestId = eventAftArr.getJSONObject(i).getString("requestId");
+                    String published = eventAftArr.getJSONObject(i).getString("published");
+                    try {
+                        UniqueUsers.addUser(login, formatter.parse(published.replaceAll("Z$", "+0000")), requestId);
+                    } catch (java.text.ParseException pe) {
+                        logger.error("Date Parse issue for " + login + " date: " + published, pe);
+                        System.exit(-1);
+                    }
+                } catch (JSONException je) {
+                    logger.debug(je);
+                    logger.debug(eventAftArr.getJSONObject(i).toString());
+                }
+            } else {
+                if (!eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).isNull("login")) {
+                    String login = eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).getString("login");
+                    String idpSource = eventAftArr.getJSONObject(i).getJSONArray("targets").getJSONObject(1).getString("displayName");
+                    String requestId = eventAftArr.getJSONObject(i).getString("requestId");
+                    UniqueUsers.addIdpSource(login, requestId, idpSource);
                 }
             }
         }
-
-        //Contains the idp successful authentications --> use this to add the idp source
-        JSONArray idpAuthArr = new JSONArray(ret2);
-
-        for (int i = 0; i < idpAuthArr.length(); i++) {
-
-            if (!idpAuthArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).isNull("login")) {
-                String login = idpAuthArr.getJSONObject(i).getJSONArray("targets").getJSONObject(0).getString("login");
-                String idpSource = idpAuthArr.getJSONObject(i).getJSONArray("targets").getJSONObject(1).getString("displayName");
-                String requestId = idpAuthArr.getJSONObject(i).getString("requestId");
-                UniqueUsers.addIdpSource(login, requestId, idpSource);
-            }
-        }
-
-        UniqueUsers.getCSV(tenantUrl);
-        UniqueUsers.getRawCSV(tenantUrl);
-
-        return UniqueUsers.getUniqueAuthCount();
+        return;
     }
 
 

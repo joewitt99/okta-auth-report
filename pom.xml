@@ -6,7 +6,7 @@
 
     <groupId>okta-ps</groupId>
     <artifactId>okta-auth-report</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-GA</version>
 
     <dependencies>
         <dependency>
