@@ -116,14 +116,18 @@ public class UniqueLoginReport {
                 "%22%20and%20%28action.objectType%20eq%20%22core.user_auth.login_success%22%20or%20" +
                 "action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22%20or%20action.objectType%20eq%20" +"" +
                 "%22core.user_auth.idp.saml.login_success%22+or+action.objectType+eq+%22app.ldap.login.success%22+or+action.objectType+eq+%22app.ad.login.success%22%29", token);
+        System.out.print("Report in progress");
         while(!ret[0].equals("[]")) {
             getUniqueUsersFromEvent(ret[0]);
             if(ret[1] != null && !ret[1].trim().equals("")) {
                 ret = get(ret[1], token);
             }
+            System.out.print(".");
         }
         UniqueUsers.getCSV(tenantUrl);
         UniqueUsers.getRawCSV(tenantUrl);
+        System.out.println("");
+        System.out.println("Report Complete");
     }
 
     public static void getUniqueUsersFromEvent(String ret) {
