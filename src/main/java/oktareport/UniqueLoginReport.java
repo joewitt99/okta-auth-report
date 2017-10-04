@@ -5,9 +5,11 @@ import org.apache.commons.cli.*;
 import java.io.BufferedReader;
 import java.io.Console;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -106,11 +108,11 @@ public class UniqueLoginReport {
     }
 
 
-    public static void eventsAPI(String startDate, String endDate) {
+    public static void eventsAPI(String startDate, String endDate) throws UnsupportedEncodingException{
 
         String[] ret = get(tenantUrl +
-                "/events?filter=published%20gt%20%22" + startDate +
-                "%22%20and%20published%20lt%20%22" + endDate +
+                "/events?filter=published%20gt%20%22" + URLEncoder.encode(startDate, "UTF-8") +
+                "%22%20and%20published%20lt%20%22" + URLEncoder.encode(endDate, "UTF-8") +
                 "%22%20and%20%28action.objectType%20eq%20%22core.user_auth.login_success%22%20or%20" +
                 "action.objectType%20eq%20%22core.user_auth.idp.saml.login_success%22%20or%20action.objectType%20eq%20" +"" +
                 "%22core.user_auth.idp.saml.login_success%22+or+action.objectType+eq+%22app.ldap.login.success%22+or+action.objectType+eq+%22app.ad.login.success%22%29", token);
