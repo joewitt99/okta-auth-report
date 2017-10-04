@@ -85,14 +85,14 @@ public class UniqueLoginReport {
                         }
                         rd.close();
                     } else {
-                        tryAgain = true;
+                        tryAgain = false;
                         rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "UTF-8"));
                         while ((line = rd.readLine()) != null) {
                             result += line;
                         }
                         rd.close();
-                        logger.debug(new Date() + " GET " + resource + " RETURNED " + retCode + ":" + ret);
-                        logger.debug(new Date() + " ERRORSTREAM = " + result);
+                        logger.error(new Date() + " GET " + resource + " RETURNED " + retCode + ":" + ret);
+                        logger.error(new Date() + " ERRORSTREAM = " + result);
                     }
                 } catch (SocketTimeoutException e) {
                     tryAgain = true;
