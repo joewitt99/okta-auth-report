@@ -69,7 +69,7 @@ public class UniqueUsers {
             logger.info("Starting generation of CSV file...");
             URL netUrl = new URL(oktaOrg);
             String host = netUrl.getHost();
-            String fileName = new SimpleDateFormat("'"+host+"-'yyyyMMddHHmm'.txt'").format(new Date());
+            String fileName = new SimpleDateFormat("'"+host+"-'yyyyMMddHHmm'.csv'").format(new Date());
             CSVWriter writer = new CSVWriter(new FileWriter(fileName));
             writer.writeNext(new String[] {"Login", "# Unique Auths", "# of Authentications", "Source"});
             uniqueUsers.loginUsers.forEach((userId, user) -> {
@@ -89,7 +89,7 @@ public class UniqueUsers {
             logger.info("Starting generation of Raw CSV file...");
             URL netUrl = new URL(oktaOrg);
             String host = netUrl.getHost();
-            String fileName = new SimpleDateFormat("'"+host+"-all-'yyyyMMddHHmm'.txt'").format(new Date());
+            String fileName = new SimpleDateFormat("'"+host+"-all-'yyyyMMddHHmm'.csv'").format(new Date());
             CSVWriter writer = new CSVWriter(new FileWriter(fileName));
             writer.writeNext(new String[] {"Login", "Date", "Source"});
             uniqueUsers.loginUsers.forEach((userId, user) -> {
